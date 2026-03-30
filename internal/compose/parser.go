@@ -2,7 +2,6 @@ package compose
 
 import (
 	"errors"
-	"fmt"
 )
 
 // Parser is a structure that holds the Docker Compose data

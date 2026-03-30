@@ -1,5 +1,7 @@
 package graph
 
+import "fmt"
+
 type DependencyGraph struct {
 	vertices map[string]struct{}
 	edges    map[string]map[string]struct{}
@@ -97,7 +99,7 @@ func (g *DependencyGraph) topologicalSortUtil(v string, visited map[string]bool,
 // reverse reverses a slice of strings
 func reverse(s []string) []string {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		 s[i], s[j] = s[j], s[i]
+		s[i], s[j] = s[j], s[i]
 	}
 	return s
 }

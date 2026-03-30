@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"docksmith/internal/image"
 	"docksmith/internal/util"
@@ -14,6 +15,12 @@ type RunOptions struct {
 	NameTag string
 	Cmd     []string
 	Env     map[string]string
+}
+
+func isWSLEnvironment() bool {
+	return os.Getenv("WSL_DISTRO_NAME") != "" || 
+	       os.Getenv("WSL_INTEROP") != "" ||
+	       os.Getenv("WSLENV") != ""
 }
 
 func RunImage(opts RunOptions) error {
@@ -63,10 +70,27 @@ func RunImage(opts RunOptions) error {
 		envMap[k] = v
 	}
 
-	command := exec.Command(cmd[0], cmd[1:]...)
+	isWSL := isWSLEnvironment()
+	
+	// On WSL, we need to adjust paths to be relative to rootfs
+	adjustedCmd := cmd
+	if isWSL {
+		adjustedCmd = make([]string, len(cmd))
+		for i, c := range cmd {
+			// If command starts with /, prepend rootfs
+			if strings.HasPrefix(c, "/") {
+				adjustedCmd[i] = filepath.Join(rootfs, c)
+			} else {
+				adjustedCmd[i] = c
+			}
+		}
+	}
+
+	command := exec.Command(adjustedCmd[0], adjustedCmd[1:]...)
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
 	command.Stdin = os.Stdin
+	
 	if err := configureChroot(command, rootfs); err != nil {
 		return err
 	}
@@ -76,7 +100,12 @@ func RunImage(opts RunOptions) error {
 		if err := os.MkdirAll(filepath.Join(rootfs, m.Config.WorkingDir), 0755); err != nil {
 			return err
 		}
-		command.Dir = m.Config.WorkingDir
+		// On WSL, use full rootfs path; on Linux with chroot, use relative path
+		if isWSL {
+			command.Dir = filepath.Join(rootfs, m.Config.WorkingDir)
+		} else {
+			command.Dir = m.Config.WorkingDir
+		}
 	}
 
 	for k, v := range envMap {

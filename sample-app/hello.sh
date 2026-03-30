@@ -1,6 +1,6 @@
-FROM base:latest
-WORKDIR /app
-ENV MESSAGE=Hello-from-DockSmith
-COPY hello.sh /app/hello.sh
-RUN chmod +x /app/hello.sh
-CMD ["/app/hello.sh"]
+#!/bin/sh
+echo "Message is: $MESSAGE"
+echo "Sample file contents:"
+cat data.txt
+echo "Writing inside container root..."
+echo "inside-container" > /tmp/container-note.txt
